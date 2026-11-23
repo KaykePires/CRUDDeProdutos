@@ -1,37 +1,41 @@
-// src/app/(components)/ProductList.tsx (versão atualizada)
-import { ProductCard } from "./ProductCard";
+'use client';
 
-export interface Product {
-  id: number;
-  title: string;
-  price: number;
+import { useRouter } from 'next/navigation';
+import { FaEdit, FaTrash } from 'react-icons/fa';
+import { Product } from '../lib/data';
+
+export interface ProductCardProps {
+  product: Product;
 }
-async function getProducts(): Promise<{ products: Product[] }> {
-  // A chamada fetch é feita no servidor.
-  // Usamos a URL absoluta quando no servidor.
-  const baseUrl = process.env.API_BASE_URL;
-  const res = await fetch(`${baseUrl}/api/products`, {
-    // cache: 'no-store' // Use para garantir dados sempre frescos (SSR)
-    next: { revalidate: 60 } // Use para revalidar a cada 60s (ISR)
-  });
 
-  if (!res.ok) {
-    throw new Error('Failed to fetch products');
-  }
+export function ProductCard({ product }: ProductCardProps) {
+  const router = useRouter();
 
-  return {
-    products: await res.json(),
+  const handleEdit = () => {
+    router.push(`/products/${product.id}/edit`); // ajuste para sua rota
   };
-}
 
-export const ProductsList = async () => {
-  const { products } = await getProducts();
+  const handleDelete = async () => {
+    if (!confirm(`Excluir "${product.title}"?`)) return;
+
+    const res = await fetch(`/api/products/${product.id}`, { method: 'DELETE' });
+    if (res.ok) {
+      router.refresh(); // recarrega os dados do Server Component
+    }
+  };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
+    <div className="border p-4 rounded-lg shadow">
+      <h3 className="text-xl font-bold">{product.title}</h3>
+      <p className="text-lg mt-2">R$ {product.price.toFixed(2)}</p>
+      <div className="mt-4 flex gap-2 align-center justify-between">
+        <button onClick={handleEdit} className="text-blue-500 hover:text-blue-700 flex items-center gap-1">
+          <FaEdit /> Editar
+        </button>
+        <button onClick={handleDelete} className="text-red-500 hover:text-red-700 flex items-center gap-1">
+          <FaTrash /> Excluir
+        </button>
+      </div>
     </div>
   );
 }
